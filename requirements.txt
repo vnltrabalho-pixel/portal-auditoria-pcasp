@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Flask-Login
+pandas
+openpyxl
+reportlab
+PyPDF2
+gunicorn
