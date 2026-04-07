@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico - Portal Auditoria{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-bar {
+        display: flex;
+        gap: 1rem;
+        margin: 1.5rem 0;
+        flex-wrap: wrap;
+    }
+    
+    .filter-bar input {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #2a2a2a;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .table th {
+        background: #2E5A47;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+    }
+    
+    .table td {
+        padding: 1rem;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table tr:hover {
+        background: #333;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
+    
+    .badge-ok { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+    .badge-erro { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+    .badge-aviso { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+    
+    .btn-small {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        margin: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>📜 Histórico de Auditorias</h1>
+
+<div class="filter-bar">
+    <input type="text" id="filterInput" placeholder="🔍 Filtrar por período (ex: 04/2025)..." style="width: 100%; max-width: 400px;">
+</div>
+
+{% if auditorias %}
+<table class="table" id="auditoriasTable">
+    <thead>
+        <tr>
+            <th>#ID</th>
+            <th>Período</th>
+            <th>Arquivo</th>
+            <th>UG</th>
+            <th>Status</th>
+            <th>Erros</th>
+            <th>Avisos</th>
+            <th>Data</th>
+            <th>Ações</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for audit in auditorias %}
+        <tr class="audit-row">
+            <td><strong>#{{ audit.id }}</strong></td>
+            <td>
+                <strong>{{ audit.mes|string|rjust(2, '0') }}/{{ audit.ano }}</strong>
+            </td>
+            <td>{{ audit.nome_arquivo }}</td>
+            <td>{{ audit.ug }}</td>
+            <td>
+                {% if audit.status == 'OK' %}
+                    <span class="badge badge-ok">✓ OK</span>
+                {% elif audit.status == 'COM_ERROS' %}
+                    <span class="badge badge-erro">✗ Erros</span>
+                {% elif audit.erros_encontrados == 0 and audit.avisos_encontrados > 0 %}
+                    <span class="badge badge-aviso">⚠️ Avisos</span>
+                {% else %}
+                    <span class="badge">⏳ {{ audit.status }}</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if audit.erros_encontrados > 0 %}
+                    <span style="color: #f44336; font-weight: bold;">{{ audit.erros_encontrados }}</span>
+                {% else %}
+                    <span style="color: #4CAF50;">0</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if audit.avisos_encontrados > 0 %}
+                    <span style="color: #ff9800; font-weight: bold;">{{ audit.avisos_encontrados }}</span>
+                {% else %}
+                    <span style="color: #9e9e9e;">0</span>
+                {% endif %}
+            </td>
+            <td style="font-size: 0.9rem; color: #9e9e9e;">
+                {{ audit.criado_em.strftime('%d/%m/%Y %H:%M') }}
+            </td>
+            <td>
+                <a href="{{ url_for('audit_bp.resultado', auditoria_id=audit.id) }}" class="btn btn-small">👁️ Ver</a>
+                <a href="{{ url_for('audit_bp.exportar_pdf', auditoria_id=audit.id) }}" class="btn btn-small">📄 PDF</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div style="text-align: center; color: #9e9e9e; padding: 3rem;">
+    <p style="font-size: 1.2rem;">📭 Nenhuma auditoria realizada ainda</p>
+    <a href="{{ url_for('audit_bp.upload') }}" class="btn" style="margin-top: 1rem;">
+        ➕ Criar Primeira Auditoria
+    </a>
+</div>
+{% endif %}
+
+<script>
+    const filterInput = document.getElementById('filterInput');
+    const table = document.getElementById('auditoriasTable');
+    
+    if (filterInput && table) {
+        filterInput.addEventListener('keyup', function() {
+            const filter = this.value.toUpperCase();
+            const rows = table.getElementsByClassName('audit-row');
+            
+            for (let i = 0; i < rows.length; i++) {
+                const text = rows[i].textContent || rows[i].innerText;
+                rows[i].style.display = text.toUpperCase().includes(filter) ? '' : 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}
