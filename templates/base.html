@@ -1,1 +1,166 @@
+{% extends "base.html" %}
 
+{% block title %}Nova Auditoria - Portal Auditoria{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 600px;
+        margin: 2rem auto;
+        background: #2a2a2a;
+        padding: 2rem;
+        border-radius: 8px;
+        border: 1px solid #333;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .file-input-wrapper {
+        position: relative;
+        overflow: hidden;
+        display: inline-block;
+        width: 100%;
+    }
+    
+    .file-input-wrapper input[type=file] {
+        position: absolute;
+        left: -9999px;
+    }
+    
+    .file-input-label {
+        display: block;
+        padding: 2rem;
+        background: #333;
+        border: 2px dashed #2E5A47;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .file-input-label:hover {
+        background: #3a3a3a;
+        border-color: #4CAF50;
+    }
+    
+    .file-input-label.dragging {
+        background: rgba(46, 90, 71, 0.2);
+        border-color: #4CAF50;
+    }
+    
+    .file-name {
+        color: #4CAF50;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .info-box {
+        background: rgba(46, 90, 71, 0.1);
+        border-left: 4px solid #2E5A47;
+        padding: 1rem;
+        margin: 1.5rem 0;
+        border-radius: 4px;
+    }
+    
+    .info-box h4 {
+        color: #4CAF50;
+        margin-top: 0;
+    }
+    
+    .info-box ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+    
+    .info-box li {
+        margin: 0.25rem 0;
+        color: #9e9e9e;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1>➕ Nova Auditoria</h1>
+
+<div class="form-container">
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="mes">Mês *</label>
+                <input type="number" id="mes" name="mes" min="1" max="12" required>
+            </div>
+            <div class="form-group">
+                <label for="ano">Ano *</label>
+                <input type="number" id="ano" name="ano" min="2020" required>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="ug">Unidade Gestora (UG) *</label>
+            <input type="text" id="ug" name="ug" placeholder="Ex: 21" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="arquivo">Arquivo CSV Fiorilli *</label>
+            <div class="file-input-wrapper">
+                <input type="file" id="arquivo" name="arquivo" accept=".csv" required>
+                <label for="arquivo" class="file-input-label" id="fileLabel">
+                    <div style="font-size: 2rem;">📁</div>
+                    <div>Clique ou arraste o arquivo CSV aqui</div>
+                    <div class="file-name" id="fileName"></div>
+                </label>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <h4>📋 Formato esperado:</h4>
+            <ul>
+                <li>Separador: <strong>;</strong> (ponto-e-vírgula)</li>
+                <li>Encoding: <strong>Latin1</strong></li>
+                <li>Decimal: <strong>,</strong> (vírgula)</li>
+                <li>Milhar: <strong>.</strong> (ponto)</li>
+            </ul>
+        </div>
+        
+        <button type="submit" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+            🚀 Processar Auditoria
+        </button>
+    </form>
+</div>
+
+<script>
+    const fileInput = document.getElementById('arquivo');
+    const fileLabel = document.getElementById('fileLabel');
+    const fileName = document.getElementById('fileName');
+    
+    fileLabel.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileLabel.classList.add('dragging');
+    });
+    
+    fileLabel.addEventListener('dragleave', () => {
+        fileLabel.classList.remove('dragging');
+    });
+    
+    fileLabel.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileLabel.classList.remove('dragging');
+        fileInput.files = e.dataTransfer.files;
+        updateFileName();
+    });
+    
+    fileInput.addEventListener('change', updateFileName);
+    
+    function updateFileName() {
+        if (fileInput.files.length > 0) {
+            fileName.textContent = `✓ ${fileInput.files[0].name}`;
+        } else {
+            fileName.textContent = '';
+        }
+    }
+</script>
+{% endblock %}
