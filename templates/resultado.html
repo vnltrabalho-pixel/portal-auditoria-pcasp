@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}Resultado Auditoria #{{ auditoria.id }} - Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .header-resultado {
+        background: #2a2a2a;
+        padding: 2rem;
+        border-radius: 8px;
+        border-left: 4px solid #2E5A47;
+        margin-bottom: 2rem;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+    
+    .status-ok { background: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+    .status-erro { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+    .status-processando { background: rgba(46, 90, 71, 0.2); color: #2E5A47; }
+    
+    .grid-2 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin: 2rem 0;
+    }
+    
+    .stat-box {
+        background: #2a2a2a;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border: 1px solid #333;
+        text-align: center;
+    }
+    
+    .stat-box .label {
+        color: #9e9e9e;
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-box .value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4CAF50;
+    }
+    
+    .stat-box.erros .value { color: #f44336; }
+    .stat-box.avisos .value { color: #ff9800; }
+    
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        background: #2a2a2a;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    .table th {
+        background: #2E5A47;
+        color: white;
+        padding: 1rem;
+        text-align: left;
+        font-weight: bold;
+    }
+    
+    .table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #333;
+    }
+    
+    .table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .erro-tipo { color: #f44336; font-weight: bold; }
+    .aviso-tipo { color: #ff9800; font-weight: bold; }
+    
+    .actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-export {
+        background: #2E5A47;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.3s;
+    }
+    
+    .btn-export:hover {
+        background: #4CAF50;
+    }
+    
+    .tab-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin: 1.5rem 0;
+        border-bottom: 2px solid #333;
+    }
+    
+    .tab-btn {
+        background: transparent;
+        color: #9e9e9e;
+        border: none;
+        padding: 1rem;
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s;
+    }
+    
+    .tab-btn.active {
+        color: #4CAF50;
+        border-bottom-color: #4CAF50;
+    }
+    
+    .tab-content {
+        display: none;
+    }
+    
+    .tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-resultado">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h1 style="margin: 0;">#{{ auditoria.id }} - {{ auditoria.mes }}/{{ auditoria.ano }}</h1>
+            <p style="color: #9e9e9e; margin: 0.5rem 0;">
+                📄 {{ auditoria.nome_arquivo }} | 🏢 UG {{ auditoria.ug }}
+            </p>
+        </div>
+        <div style="text-align: right;">
+            {% if auditoria.status == 'OK' %}
+                <span class="status-badge status-ok">✓ VALIDADO</span>
+            {% elif auditoria.status == 'COM_ERROS' %}
+                <span class="status-badge status-erro">✗ COM ERROS</span>
+            {% else %}
+                <span class="status-badge status-processando">⏳ {{ auditoria.status }}</span>
+            {% endif %}
+        </div>
+    </div>
+    <p style="color: #9e9e9e; font-size: 0.9rem; margin-top: 1rem;">
+        Processado em {{ auditoria.processado_em.strftime('%d/%m/%Y às %H:%M:%S') if auditoria.processado_em else 'Aguardando...' }}
+    </p>
+</div>
+
+<div class="grid-2">
+    <div class="stat-box">
+        <div class="label">Total de Contas</div>
+        <div class="value">{{ auditoria.total_linhas }}</div>
+    </div>
+    <div class="stat-box">
+        <div class="label">Validadas</div>
+        <div class="value">{{ auditoria.contas_validadas }}</div>
+    </div>
+    <div class="stat-box erros">
+        <div class="label">Erros</div>
+        <div class="value">{{ auditoria.erros_encontrados }}</div>
+    </div>
+    <div class="stat-box avisos">
+        <div class="label">Avisos</div>
+        <div class="value">{{ auditoria.avisos_encontrados }}</div>
+    </div>
+</div>
+
+{% if resultado %}
+<div>
+    <div class="tab-buttons">
+        <button class="tab-btn active" onclick="showTab('resumo')">📋 Resumo</button>
+        {% if resultado.erros %}
+            <button class="tab-btn" onclick="showTab('erros')">❌ Erros ({{ resultado.erros|length }})</button>
+        {% endif %}
+        {% if resultado.avisos %}
+            <button class="tab-btn" onclick="showTab('avisos')">⚠️ Avisos ({{ resultado.avisos|length }})</button>
+        {% endif %}
+    </div>
+    
+    <div id="resumo" class="tab-content active">
+        <h2>📊 Resumo da Auditoria</h2>
+        <div style="background: #2a2a2a; padding: 1.5rem; border-radius: 8px; border-left: 4px solid #2E5A47;">
+            <p><strong>Status:</strong> 
+                {% if resultado.resumo.status == 'OK' %}
+                    <span style="color: #4CAF50;">✓ Balancete Validado com Sucesso</span>
+                {% else %}
+                    <span style="color: #f44336;">✗ Balancete contém erros</span>
+                {% endif %}
+            </p>
+            <p><strong>Contas Processadas:</strong> {{ resultado.contas_validadas }}</p>
+            <p><strong>Erros Encontrados:</strong> <span style="color: #f44336;">{{ resultado.resumo.total_erros }}</span></p>
+            <p><strong>Avisos:</strong> <span style="color: #ff9800;">{{ resultado.resumo.total_avisos }}</span></p>
+        </div>
+    </div>
+    
+    {% if resultado.erros %}
+    <div id="erros" class="tab-content">
+        <h2>❌ Erros Encontrados ({{ resultado.erros|length }})</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Conta</th>
+                    <th>Descrição</th>
+                    <th>Esperado</th>
+                    <th>Obtido</th>
+                    <th>Diferença</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for erro in resultado.erros %}
+                <tr>
+                    <td><strong>{{ erro.codigo_conta }}</strong></td>
+                    <td>{{ erro.descricao }}</td>
+                    <td>{{ "%.2f"|format(erro.valor_esperado) if erro.valor_esperado else '-' }}</td>
+                    <td>{{ "%.2f"|format(erro.valor_obtido) if erro.valor_obtido else '-' }}</td>
+                    <td>
+                        {% if erro.valor_esperado and erro.valor_obtido %}
+                            {{ "%.2f"|format(erro.valor_esperado - erro.valor_obtido) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    {% if resultado.avisos %}
+    <div id="avisos" class="tab-content">
+        <h2>⚠️ Avisos ({{ resultado.avisos|length }})</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Conta</th>
+                    <th>Descrição</th>
+                    <th>Esperado</th>
+                    <th>Obtido</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aviso in resultado.avisos %}
+                <tr>
+                    <td><strong>{{ aviso.codigo_conta }}</strong></td>
+                    <td>{{ aviso.descricao }}</td>
+                    <td>{{ "%.2f"|format(aviso.valor_esperado) if aviso.valor_esperado else '-' }}</td>
+                    <td>{{ "%.2f"|format(aviso.valor_obtido) if aviso.valor_obtido else '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="actions">
+    <a href="{{ url_for('audit_bp.historico') }}" class="btn-export">
+        ← Voltar ao Histórico
+    </a>
+    <a href="{{ url_for('audit_bp.exportar_pdf', auditoria_id=auditoria.id) }}" class="btn-export">
+        📄 Exportar PDF
+    </a>
+    <a href="{{ url_for('audit_bp.exportar_excel', auditoria_id=auditoria.id) }}" class="btn-export">
+        📊 Exportar Excel
+    </a>
+    <a href="{{ url_for('audit_bp.upload') }}" class="btn-export">
+        ➕ Nova Auditoria
+    </a>
+</div>
+
+<script>
+    function showTab(tabName) {
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(c => c.classList.remove('active'));
+        
+        const buttons = document.querySelectorAll('.tab-btn');
+        buttons.forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(tabName).classList.add('active');
+        event.target.classList.add('active');
+    }
+</script>
+{% endblock %}
